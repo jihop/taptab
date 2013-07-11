@@ -1,8 +1,8 @@
 {
     "manifest_version": 2,
-    "name": "Tap Tab",
-    "description": "Simple way to view and manage your open tabs",
-    "version": "0.1",
+    "name": "Taptab",
+    "description": "Simple tab manager for chrome",
+    "version": "0.3",
     "permissions": [
         "tabs"
     ],
@@ -10,6 +10,13 @@
         "16": "icon16.png",
         "48": "icon48.png",
         "128": "icon128.png"
+    },
+    "commands": {
+        "_execute_browser_action": {
+            "suggested_key": {
+                "default": "Ctrl+S"
+            }
+        }
     },
     "browser_action": {
         "default_icon": "icon.png",

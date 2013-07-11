@@ -21,10 +21,9 @@
  */
 $(document).ready(function() {
 
-    $('#input_text').focus();
+    chrome.tabs.query({'currentWindow':true}, function (tabs){
 
-    chrome.tabs.query({'active':false}, function (tabs){
-
+        // Create List from Tabs
         for (var i=0; i<tabs.length; i++) {
 
             var tmpTab = tabs[i];
@@ -32,19 +31,19 @@ $(document).ready(function() {
             $('body').append(
                 $('<div></div>')
                 .attr('id', tmpTab.id)
-                .attr('class','tab')
                 .attr('title', tmpTab.url) // "Alt" Text
+                .attr('class', (tmpTab.active)? 'tab highlighted active' : 'tab')
                 .append(
                     $('<img/>').attr('src', tmpTab.favIconUrl)
                     .attr('width', '16')
                     .attr('height', '16')
                 ).append(
-                    $('<span></span>').html($('<div/>').text(tmpTab.title).html()) // HTML Encode Title
+                    $('<span></span>')
+                    .html($('<div/>').text(tmpTab.title).html()) // HTML Encode Title
                 ).mouseover(function() {
-                    $(this).css({'backgroundColor':'#eee'});
-                }).mouseout(function() {
-                    $(this).css({'backgroundColor':'#fff'});
-                }).mousedown(function(e) {
+                    $('.highlighted').removeClass('highlighted');
+                    $(this).addClass('highlighted');
+                }).mouseup(function(e) {
 
                     var tabId = parseInt($(this).attr('id'));
 
@@ -52,11 +51,74 @@ $(document).ready(function() {
                         chrome.tabs.update(tabId, {selected:true});
                     }
                     else if (e.which == 2) { // Middle Click
-                        chrome.tabs.remove(tabId, function() {});
                         $(this).remove();
+                        chrome.tabs.remove(tabId, function() {});
                     }
                 })
             );
         }
+
+        // Keyboard Binding
+        $('body').keydown(function(e){
+
+            if (e.keyCode == '37' || e.keyCode == '38') { // LEFT | UP
+
+                var highlightedTab = $('.highlighted');
+                var prevElement = $('.highlighted').prev();
+                if (prevElement.hasClass('tab')) {
+                    highlightedTab.removeClass('highlighted');
+                    prevElement.addClass('highlighted');
+                }
+
+            } else if (e.keyCode == '39' || e.keyCode == '40') { // RIGHT | DOWN
+
+                var highlightedTab = $('.highlighted');
+                var nextElement = $('.highlighted').next();
+                if (nextElement.hasClass('tab')) {
+                    highlightedTab.removeClass('highlighted');
+                    nextElement.addClass('highlighted');
+                }
+
+            } else if (e.keyCode == '13') { // ENTER
+
+                var highlightedTabId = parseInt($('.highlighted').attr('id'));
+                chrome.tabs.update(highlightedTabId, {selected:true});
+
+            } else if (e.keyCode == '46') { // DELETE
+
+                var highlightedTab = $('.highlighted');
+                var highlightedTabId = parseInt(highlightedTab.attr('id'));
+
+                // Determine tab to be highlighted next
+                var newSelectedTab = highlightedTab.next();
+                if (!newSelectedTab.hasClass('tab')) {
+                    newSelectedTab = highlightedTab.prev(); // Select previous tab if next tab doesn't exist
+                }
+                newSelectedTab.addClass('highlighted');
+
+                // Remove currently highlighted tab
+                highlightedTab.remove();
+                chrome.tabs.remove(highlightedTabId, function() {
+
+                });
+            }
+        });
     });
+});
+
+// Re-Determine Active Tab
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+
+    chrome.tabs.query({currentWindow:true, active:true}, function(tabs) {
+
+        var activeTab = tabs[0];
+
+        $('.active').removeClass('active');
+        $('#' + activeTab.id).addClass('active');
+    });
+});
+
+// Close Popup on new Tab Open
+chrome.tabs.onCreated.addListener(function(tabId, changeInfo, tab) {
+    window.close();
 });
